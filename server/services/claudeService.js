@@ -3,31 +3,63 @@ import fetch from "node-fetch";
 const CLAUDE_API_URL =
   process.env.CLAUDE_API_URL || "https://api.anthropic.com/v1/messages";
 
-//=== Cache for recipe intents ===
+const CLAUDE_TIMEOUT_MS = 30000;
+
 const intentCache = new Map();
-const INTENT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const INTENT_CACHE_TTL = 10 * 60 * 1000;
+
+const sanitizeInput = (input) => {
+  if (typeof input !== "string") return "";
+  return input.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 2000);
+};
+
+const fetchWithTimeout = async (url, options, timeoutMs) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw err;
+  }
+};
 
 export const generateRecipeText = async (prompt, apiKey) => {
   if (!prompt) throw new Error("Prompt is required.");
   if (!apiKey) throw new Error("Anthropic API Key is missing.");
 
-  console.log(`Using Claude API URL: ${CLAUDE_API_URL}`);
-  console.log(`API Key loaded (first 7 chars): ${apiKey.substring(0, 7)}...`);
+  const sanitizedPrompt = sanitizeInput(prompt);
 
-  const response = await fetch(CLAUDE_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+  console.log(`Using Claude API URL: ${CLAUDE_API_URL}`);
+  console.log(`API Key length: ${apiKey.length}`);
+
+  const response = await fetchWithTimeout(
+    CLAUDE_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 1100,
+        temperature: 0.7,
+        messages: [{ role: "user", content: sanitizedPrompt }],
+      }),
     },
-    body: JSON.stringify({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 1100,
-      temperature: 0.7,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+    CLAUDE_TIMEOUT_MS,
+  );
 
   const data = await response.json();
 
@@ -55,7 +87,6 @@ export const detectRecipeIntent = async (ingredients, apiKey) => {
     .sort()
     .join("|");
 
-  // 🔥 Cache hit
   if (intentCache.has(cacheKey)) {
     const cached = intentCache.get(cacheKey);
 
@@ -63,7 +94,6 @@ export const detectRecipeIntent = async (ingredients, apiKey) => {
       return cached.intent;
     }
 
-    // Expired entry
     intentCache.delete(cacheKey);
   }
 
@@ -85,7 +115,6 @@ food or drink
     throw new Error(`Invalid intent response: ${intent}`);
   }
 
-  //Save to cache
   intentCache.set(cacheKey, {
     intent: normalizedIntent,
     timestamp: Date.now(),

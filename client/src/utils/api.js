@@ -1,7 +1,6 @@
 const DEFAULT_API_BASE = 'http://localhost:3000/api';
 const rawApiUrl = import.meta.env.VITE_API_URL || DEFAULT_API_BASE;
 
-// Normalize so we don't accidentally hit /recipes/recipes when the env var already includes the route
 const normalizedBase = rawApiUrl.replace(/\/+$/, '');
 const RECIPES_ENDPOINT = normalizedBase.endsWith('/recipes')
   ? normalizedBase
@@ -25,8 +24,16 @@ export async function getRecipeFromClaude(
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || 'Failed to fetch recipe');
+    let message = `Server error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      message = errorData?.error || message;
+    } catch {
+      // ignore parse error
+    }
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return await response.json();

@@ -98,7 +98,19 @@ export default function Main({ userId, showMessageModal }) {
       setRecipe(result.recipe);
     } catch (error) {
       console.error(error);
-      setRecipe('Failed to generate recipe.');
+      let userMessage = 'Failed to generate recipe. Please try again.';
+      
+      if (error.isNetworkError) {
+        userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (error.status === 500) {
+        userMessage = 'Server is temporarily unavailable. Please try again in a few moments.';
+      } else if (error.status === 401 || error.status === 403) {
+        userMessage = 'API authentication failed. Please contact the administrator.';
+      } else if (error.message) {
+        userMessage = error.message;
+      }
+      
+      setRecipe(userMessage);
     } finally {
       clearTimeout(stage1);
       clearTimeout(stage2);
