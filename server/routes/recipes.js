@@ -1,45 +1,61 @@
-import express from 'express';
-import { generateRecipeText } from '../services/claudeService.js';
+import express from "express";
+import { generateRecipeText } from "../services/claudeService.js";
 
 const router = express.Router();
 
-router.post('/recipes', async (req, res) => {
+const sanitizeString = (str) => {
+  if (typeof str !== "string") return "";
+  return str.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 200);
+};
+
+const sanitizeIngredient = (ing) => {
+  if (typeof ing !== "string") return "";
+  return ing.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 100);
+};
+
+router.post("/recipes", async (req, res) => {
   try {
-    const { ingredients, cookingMethod, type } = req.body;
+    const rawIngredients = req.body.ingredients;
+    const rawCookingMethod = req.body.cookingMethod;
+    const rawType = req.body.type;
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     const normalizedType =
-      typeof type === 'string' && ['food', 'drink'].includes(type.toLowerCase())
-        ? type.toLowerCase()
+      typeof rawType === "string" &&
+      ["food", "drink"].includes(rawType.toLowerCase())
+        ? rawType.toLowerCase()
         : null;
-    const normalizedMethod =
-      typeof cookingMethod === 'string' ? cookingMethod.trim() : '';
+    const normalizedMethod = sanitizeString(rawCookingMethod);
 
-    // Validation
-    if (!Array.isArray(ingredients) || ingredients.length < 4) {
+    if (!Array.isArray(rawIngredients) || rawIngredients.length < 4) {
       return res.status(400).json({
-        error: 'Please provide at least 4 ingredients to get a high-quality recipe.'
+        error: "Please provide at least 4 ingredients.",
       });
     }
 
-    if (!normalizedType || !['food', 'drink'].includes(normalizedType)) {
+    const ingredients = rawIngredients
+      .map(sanitizeIngredient)
+      .filter((ing) => ing.trim().length > 0)
+      .slice(0, 20);
+
+    if (ingredients.length < 4) {
       return res.status(400).json({
-        error: 'Recipe type must be food or drink'
+        error: "Please provide at least 4 valid ingredients.",
       });
     }
 
-    /* =========================
-       DRINK
-       ========================= */
-    if (normalizedType === 'drink') {
-      if (normalizedMethod) {
-        console.warn('Ignoring cookingMethod for drink recipe');
-      }
+    if (!normalizedType || !["food", "drink"].includes(normalizedType)) {
+      return res.status(400).json({
+        error: "Recipe type must be food or drink",
+      });
+    }
 
+    if (normalizedType === "drink") {
       const prompt = `
-You are Chef BonBon, a professional bartender focused on balance and drinkability.
+You are Chef BonBon, a professional bartender.
 
 Ingredients:
-${ingredients.join(', ')}
+${ingredients.join(", ")}
 
 Allowed staples:
 - ice
@@ -47,11 +63,10 @@ Allowed staples:
 - simple syrup (only if needed)
 
 Rules:
-- You MUST use all listed ingredients
-- Do NOT invent additional liquors or mixers
-- If flavors clash, simplify rather than embellish
+- Use all listed ingredients
+- Do NOT invent additional liquors
 
-Format exactly:
+Format:
 
 Drink Name:
 Ingredients:
@@ -64,21 +79,13 @@ Glass:
 Why this works:
 - brief explanation
 `;
-
       const recipeText = await generateRecipeText(prompt, apiKey);
-
-      return res.json({
-        recipeType: 'drink',
-        recipe: recipeText
-      });
+      return res.json({ recipeType: "drink", recipe: recipeText });
     }
 
-    /* =========================
-       FOOD
-       ========================= */
     if (!normalizedMethod) {
       return res.status(400).json({
-        error: 'Cooking method required for food recipes'
+        error: "Cooking method required for food recipes",
       });
     }
 
@@ -86,25 +93,19 @@ Why this works:
 You are Chef BonBon, a thoughtful home cook.
 
 Ingredients:
-${ingredients.join(', ')}
+${ingredients.join(", ")}
 
 Allowed pantry staples:
-- oil
-- salt
-- pepper
-- garlic
-- water
+- oil, salt, pepper, garlic, water
 
 Cooking method:
 ${normalizedMethod}
 
 Rules:
-- You MUST use all listed ingredients
-- Pantry staples may support, not dominate
+- Use all listed ingredients
 - Respect the cooking method
-- Favor realism over creativity
 
-Format exactly:
+Format:
 
 Recipe Name:
 Ingredients:
@@ -114,22 +115,18 @@ Steps:
 1. step
 
 Cooking Tips:
-- tips specific to ${cookingMethod}
+- tips specific to ${normalizedMethod}
 
 Why this works:
 - short explanation
 `;
-
     const recipeText = await generateRecipeText(prompt, apiKey);
-
-    return res.json({
-      recipeType: 'food',
-      recipe: recipeText
-    });
-  } catch (err) {
-    console.error('Recipe route error:', err);
+    return res.json({ recipeType: "food", recipe: recipeText });
+  } catch (error) {
+    console.error("Recipe route error:", error);
     res.status(500).json({
-      error: 'Something went wrong with the chef.'
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 });
