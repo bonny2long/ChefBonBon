@@ -1,53 +1,59 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 const CLAUDE_API_URL =
-  process.env.CLAUDE_API_URL || 'https://api.anthropic.com/v1/messages';
+  process.env.CLAUDE_API_URL || "https://api.anthropic.com/v1/messages";
 
 //=== Cache for recipe intents ===
 const intentCache = new Map();
 const INTENT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-
 export const generateRecipeText = async (prompt, apiKey) => {
-  if (!prompt) throw new Error('Prompt is required.');
-  if (!apiKey) throw new Error('Anthropic API Key is missing.');
+  if (!prompt) throw new Error("Prompt is required.");
+  if (!apiKey) throw new Error("Anthropic API Key is missing.");
+
+  console.log(`Using Claude API URL: ${CLAUDE_API_URL}`);
+  console.log(`API Key loaded (first 7 chars): ${apiKey.substring(0, 7)}...`);
 
   const response = await fetch(CLAUDE_API_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
+      model: "claude-3-5-haiku-20241022",
       max_tokens: 1100,
       temperature: 0.7,
-      messages: [{ role: 'user', content: prompt }]
-    })
+      messages: [{ role: "user", content: prompt }],
+    }),
   });
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error?.message || 'Claude API error');
+    console.error("Claude API error response:", JSON.stringify(data, null, 2));
+    throw new Error(
+      data.error?.message ||
+        `Claude API error: ${response.status} ${response.statusText}`,
+    );
   }
 
   const text = data?.content?.[0]?.text;
-  if (!text) throw new Error('Claude returned no text');
+  if (!text) throw new Error("Claude returned no text");
 
   return text;
 };
 
 export const detectRecipeIntent = async (ingredients, apiKey) => {
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
-    throw new Error('Ingredients are required for intent detection.');
+    throw new Error("Ingredients are required for intent detection.");
   }
 
   const cacheKey = ingredients
-    .map(i => i.toLowerCase().trim())
+    .map((i) => i.toLowerCase().trim())
     .sort()
-    .join('|');
+    .join("|");
 
   // 🔥 Cache hit
   if (intentCache.has(cacheKey)) {
@@ -65,7 +71,7 @@ export const detectRecipeIntent = async (ingredients, apiKey) => {
 You are classifying user intent.
 
 Ingredients:
-${ingredients.join(', ')}
+${ingredients.join(", ")}
 
 Respond with exactly ONE word:
 food or drink
@@ -75,16 +81,15 @@ food or drink
 
   const normalizedIntent = intent.trim().toLowerCase();
 
-  if (!['food', 'drink'].includes(normalizedIntent)) {
+  if (!["food", "drink"].includes(normalizedIntent)) {
     throw new Error(`Invalid intent response: ${intent}`);
   }
 
   //Save to cache
   intentCache.set(cacheKey, {
     intent: normalizedIntent,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 
   return normalizedIntent;
 };
-
