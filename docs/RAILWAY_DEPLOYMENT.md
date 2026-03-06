@@ -1,4 +1,4 @@
-# 🚂 Railway Deployment Guide for ChefBot Backend
+# Railway Deployment Guide for ChefBot Backend
 
 This guide will help you deploy your ChefBot backend to Railway.
 
@@ -12,22 +12,22 @@ This guide will help you deploy your ChefBot backend to Railway.
 
 ### 1. Create a New Railway Project
 
-1. Go to [Railway.app](https://railway.app/)
-2. Click **"Start a New Project"**
-3. Select **"Deploy from GitHub repo"**
+1. Go to Railway.app
+2. Click "Start a New Project"
+3. Select "Deploy from GitHub repo"
 4. Authorize Railway to access your GitHub account
-5. Select your **ChefBot** repository
+5. Select your ChefBot repository
 
 ### 2. Configure the Service
 
-Railway will automatically detect your Node.js application. The `railway.json` file in your repository will configure the deployment settings.
+Railway will automatically detect your Node.js application. The railway.json file in your repository will configure the deployment settings.
 
 ### 3. Set Environment Variables
 
 In your Railway project dashboard:
 
 1. Click on your service
-2. Go to the **"Variables"** tab
+2. Go to the "Variables" tab
 3. Add the following environment variables:
 
 ```
@@ -36,26 +36,26 @@ CLAUDE_API_URL=https://api.anthropic.com/v1/messages
 NODE_ENV=production
 ```
 
-**Important**: Replace `sk-ant-your-actual-api-key-here` with your actual Anthropic API key.
+Important: Replace sk-ant-your-actual-api-key-here with your actual Anthropic API key.
 
 ### 4. Deploy
 
-Railway will automatically deploy your application. You can monitor the deployment in the **"Deployments"** tab.
+Railway will automatically deploy your application. You can monitor the deployment in the "Deployments" tab.
 
 ### 5. Get Your Backend URL
 
 Once deployed:
 
-1. Go to the **"Settings"** tab
-2. Scroll to **"Networking"**
-3. Click **"Generate Domain"** to get a public URL
-4. Your backend will be available at: `https://your-app-name.up.railway.app`
+1. Go to the "Settings" tab
+2. Scroll to "Networking"
+3. Click "Generate Domain" to get a public URL
+4. Your backend will be available at: https://your-app-name.up.railway.app
 
 ### 6. Update Your Frontend
 
 Update your frontend environment variables to point to your new Railway backend URL:
 
-```env
+```bash
 VITE_API_URL=https://your-app-name.up.railway.app
 ```
 
@@ -95,10 +95,10 @@ Ensure your `package.json` has the correct start script:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key for Claude AI | ✅ Yes |
-| `CLAUDE_API_URL` | Claude API endpoint (default: https://api.anthropic.com/v1/messages) | ⚠️ Optional |
-| `PORT` | Port number (Railway sets this automatically) | ❌ No |
-| `NODE_ENV` | Environment mode (set to "production") | ⚠️ Recommended |
+| ANTHROPIC_API_KEY | Your Anthropic API key for Claude AI | Yes |
+| CLAUDE_API_URL | Claude API endpoint (default: https://api.anthropic.com/v1/messages) | Optional |
+| PORT | Port number (Railway sets this automatically) | No |
+| NODE_ENV | Environment mode (set to "production") | Recommended |
 
 ## Testing Your Deployment
 
@@ -113,8 +113,8 @@ curl -X POST https://your-app-name.up.railway.app/claude-proxy \
 
 ## Monitoring and Logs
 
-- **View Logs**: In Railway dashboard, go to your service → "Deployments" → Click on a deployment → "View Logs"
-- **Metrics**: Railway provides CPU, Memory, and Network metrics in the "Metrics" tab
+- View Logs: In Railway dashboard, go to your service, click "Deployments", then click on a deployment to view logs
+- Metrics: Railway provides CPU, Memory, and Network metrics in the "Metrics" tab
 
 ## Troubleshooting
 
@@ -144,22 +144,22 @@ Railway offers:
 
 ## Advantages of Railway
 
-✅ **Automatic Deployments**: Push to GitHub → Auto-deploy  
-✅ **Easy Environment Variables**: Simple UI for managing secrets  
-✅ **Built-in Monitoring**: Logs and metrics out of the box  
-✅ **Fast Deployments**: Typically under 2 minutes  
-✅ **Free SSL**: HTTPS enabled by default  
-✅ **Generous Free Tier**: Great for hobby projects  
+- Automatic Deployments: Push to GitHub, auto-deploy
+- Easy Environment Variables: Simple UI for managing secrets
+- Built-in Monitoring: Logs and metrics out of the box
+- Fast Deployments: Typically under 2 minutes
+- Free SSL: HTTPS enabled by default
+- Generous Free Tier: Great for hobby projects
 
 ## Migration from Render
 
 If you're migrating from Render:
 
-1. ✅ All code changes are already done (server.js updated)
-2. ✅ Configuration file created (railway.json)
-3. ⚠️ Copy environment variables from Render to Railway
-4. ⚠️ Update frontend to use new Railway URL
-5. ⚠️ Test thoroughly before switching production traffic
+1. All code changes are already done (server.js updated)
+2. Configuration file created (railway.json)
+3. Copy environment variables from Render to Railway
+4. Update frontend to use new Railway URL
+5. Test thoroughly before switching production traffic
 
 ## Support
 
@@ -169,4 +169,4 @@ If you're migrating from Render:
 
 ---
 
-**Need Help?** Check the Railway logs first, then consult the documentation or community Discord.
+Need Help? Check the Railway logs first, then consult the documentation or community Discord.

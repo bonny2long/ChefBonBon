@@ -21,10 +21,12 @@ router.post("/recipes", async (req, res) => {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     const normalizedType =
-      typeof rawType === "string" &&
-      ["food", "drink"].includes(rawType.toLowerCase())
-        ? rawType.toLowerCase()
-        : null;
+      (
+        typeof rawType === "string" &&
+        ["food", "drink"].includes(rawType.toLowerCase())
+      ) ?
+        rawType.toLowerCase()
+      : null;
     const normalizedMethod = sanitizeString(rawCookingMethod);
 
     if (!Array.isArray(rawIngredients) || rawIngredients.length < 4) {
