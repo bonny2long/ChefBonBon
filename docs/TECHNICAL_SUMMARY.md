@@ -1,8 +1,8 @@
-# ChefBot Technical Summary
+# ChefBonBon Technical Summary
 
 ## Project Overview
 
-ChefBot is a full-stack web application that generates AI-powered recipes based on user-provided ingredients. The application demonstrates complex full-stack development skills including database architecture, authentication, real-time features, API design, and security implementation.
+ChefBonBon  is a full-stack web application that generates AI-powered recipes based on user-provided ingredients. The application demonstrates complex full-stack development skills including database architecture, authentication, real-time features, API design, and security implementation.
 
 ## Architecture
 
