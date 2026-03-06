@@ -10,9 +10,9 @@ This guide will help you set up your Supabase database schema and Row Level Secu
 
 ## Environment Variables
 
-Add these to your `.env` file:
+Add these to your client/.env file:
 
-```env
+```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
