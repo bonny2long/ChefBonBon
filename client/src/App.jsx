@@ -1,18 +1,17 @@
 // src/App.jsx
 import React, { useState, useEffect, Suspense, lazy } from "react";
 import Header from "./components/layout/Header";
-import BurgerMenu from "./components/layout/BurgerMenu";
+import BottomNav from "./components/layout/BottomNav";
 import AuthModal from "./components/auth/AuthModal";
 import MessageModal from "./components/ui/MessageModal";
 
-
-// Supabase imports
 import { setupAuthListener, signOut } from "./lib/supabase";
 
 const Main = lazy(() => import("./components/recipes/Main"));
 const SavedRecipes = lazy(() => import("./components/recipes/SavedRecipes"));
 const PublicFeed = lazy(() => import("./components/recipes/PublicFeed"));
 const LikedRecipes = lazy(() => import("./components/recipes/LikedRecipes"));
+const ScanScreen = lazy(() => import("./components/recipes/ScanScreen"));
 
 export default function App() {
   const [userId, setUserId] = useState(null);
@@ -45,7 +44,6 @@ export default function App() {
     return firstName || trimmed;
   };
 
-
   useEffect(() => {
     const unsubscribe = setupAuthListener((user, usernameFromDb) => {
       if (user) {
@@ -65,17 +63,14 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Centralized function to show message modal
   const showMessageModal = (title, message) => {
     setMessageModal({ isOpen: true, title, message });
   };
 
-  // Centralized function to close message modal
   const closeMessageModal = () => {
     setMessageModal({ ...messageModal, isOpen: false });
   };
 
-  // AuthModal's onAuthSuccess handler
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     showMessageModal(
@@ -111,34 +106,42 @@ export default function App() {
   const handleViewPublicFeedClick = () => setCurrentViewMode("publicFeed");
   const handleViewLikedRecipesClick = () => setCurrentViewMode("likedRecipes");
 
+  const handleTabChange = (tabId) => {
+    if (tabId === 'home') {
+      setCurrentViewMode("main");
+    } else if (tabId === 'saved') {
+      setCurrentViewMode("savedRecipes");
+    } else if (tabId === 'scan') {
+      setCurrentViewMode("scan");
+    } else if (tabId === 'account') {
+      if (userId) {
+        handleLogout();
+      } else {
+        openLoginModal();
+      }
+    }
+  };
+
+  const getCurrentTab = () => {
+    if (currentViewMode === 'main') return 'home';
+    if (currentViewMode === 'savedRecipes') return 'saved';
+    if (currentViewMode === 'scan') return 'scan';
+    return 'home';
+  };
+
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen bg-gray-100 font-sans antialiased flex flex-col items-center justify-center">
-        <p className="text-gray-700 text-lg">Loading user session...</p>
+      <div className="min-h-screen bg-cream font-sans antialiased flex flex-col items-center justify-center">
+        <p className="text-olive text-lg">Loading user session...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans antialiased flex flex-col items-center relative">
-      <BurgerMenu
-        userId={userId}
-        userName={userName}
-        onLoginClick={openLoginModal}
-        onSignupClick={openSignupModal}
-        onLogoutClick={handleLogout}
-        onViewRecipesClick={handleViewRecipesClick}
-        onGoHomeClick={handleGoHomeClick}
-        onViewPublicFeedClick={handleViewPublicFeedClick}
-        onViewLikedRecipesClick={handleViewLikedRecipesClick}
-        currentViewMode={currentViewMode}
-      />
-
-
+    <div className="min-h-screen bg-cream font-sans antialiased flex flex-col items-center relative w-full max-w-4xl mx-auto">
       <Header userId={userId} userName={userName} />
 
-     <div className="flex-grow flex justify-center items-start pt-2 pb-8 w-full">
-
+      <div className="flex-grow flex justify-center items-start pt-2 pb-20 w-full">
         <Suspense
           fallback={
             <p className="text-center text-gray-600 mt-8">Loading...</p>
@@ -148,6 +151,7 @@ export default function App() {
             <Main
               userId={userId}
               showMessageModal={showMessageModal}
+              onViewSaved={handleViewRecipesClick}
             />
           )}
           {currentViewMode === "savedRecipes" && userId && (
@@ -174,8 +178,20 @@ export default function App() {
               Please log in to view your liked recipes.
             </p>
           )}
+          {currentViewMode === "scan" && (
+            <ScanScreen
+              userId={userId}
+              onGoHome={handleGoHomeClick}
+              showMessageModal={showMessageModal}
+            />
+          )}
         </Suspense>
       </div>
+
+      <BottomNav
+        currentTab={getCurrentTab()}
+        onTabChange={handleTabChange}
+      />
 
       <AuthModal
         isOpen={showAuthModal}

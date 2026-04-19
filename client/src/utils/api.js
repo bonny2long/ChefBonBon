@@ -6,6 +6,19 @@ const RECIPES_ENDPOINT = normalizedBase.endsWith('/recipes')
   ? normalizedBase
   : `${normalizedBase}/recipes`;
 
+function parseRecipeResponse(text) {
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.name && parsed.ingredients && parsed.steps) {
+      return parsed;
+    }
+  } catch {
+    // Not JSON, try to extract from text
+  }
+
+  return null;
+}
+
 export async function getRecipeFromClaude(
   ingredients,
   cookingMethod = null,
@@ -36,5 +49,13 @@ export async function getRecipeFromClaude(
     throw error;
   }
 
-  return await response.json();
+  const data = await response.json();
+  const recipeText = data.recipe;
+
+  const parsed = parseRecipeResponse(recipeText);
+  if (parsed) {
+    return { recipe: parsed, raw: recipeText };
+  }
+
+  return { recipe: recipeText, raw: recipeText, isRaw: true };
 }

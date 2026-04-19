@@ -92,35 +92,34 @@ Why this works:
     }
 
     const prompt = `
-You are Chef BonBon, a thoughtful home cook.
+You are Chef BonBon, a precise recipe JSON generator.
 
-Ingredients:
-${ingredients.join(", ")}
+IMPORTANT: You MUST respond with ONLY valid JSON. No text before or after. No markdown formatting.
 
-Allowed pantry staples:
-- oil, salt, pepper, garlic, water
+For the recipe using: ${ingredients.join(", ")}
 
-Cooking method:
-${normalizedMethod}
+Cooking method: ${normalizedMethod}
 
-Rules:
-- Use all listed ingredients
-- Respect the cooking method
+Output this exact JSON structure:
+{
+  "name": "Recipe Name",
+  "description": "Brief 1-2 sentence description",
+  "cookingMethod": "${normalizedMethod}",
+  "prepTime": 10,
+  "cookTime": 35,
+  "servings": 2,
+  "difficulty": "easy",
+  "dietary": [],
+  "ingredients": [
+    { "name": "ingredient name", "quantity": 1, "unit": "unit" }
+  ],
+  "steps": [
+    "Step instruction"
+  ],
+  "primaryIngredient": "main ingredient"
+}
 
-Format:
-
-Recipe Name:
-Ingredients:
-- item with amount
-
-Steps:
-1. step
-
-Cooking Tips:
-- tips specific to ${normalizedMethod}
-
-Why this works:
-- short explanation
+Respond with ONLY the JSON. No explanation.
 `;
     const recipeText = await generateRecipeText(prompt, apiKey);
     return res.json({ recipeType: "food", recipe: recipeText });

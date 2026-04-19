@@ -1,6 +1,5 @@
 // src/components/layout/Header.jsx
 import React, { useState, useEffect } from "react";
-import chefBot from "../../assets/images/chef-icon.png";
 
 const getRecipeMode = () => {
   const stored = sessionStorage.getItem("recipeContext");
@@ -15,22 +14,7 @@ const getRecipeMode = () => {
 };
 
 export default function Header({ userId, userName }) {
-  const [greeting, setGreeting] = useState("");
   const [recipeMode, setRecipeMode] = useState(getRecipeMode);
-  const name = userName || (userId ? "Guest" : "there");
-
-  useEffect(() => {
-    const getGreetingText = () => {
-      const hour = new Date().getHours();
-      if (hour >= 5 && hour < 12) return "Good morning";
-      if (hour >= 12 && hour < 18) return "Good afternoon";
-      return "Good evening";
-    };
-
-    setGreeting(getGreetingText());
-    const id = setInterval(() => setGreeting(getGreetingText()), 60000);
-    return () => clearInterval(id);
-  }, []);
 
   useEffect(() => {
     const syncRecipeMode = () => setRecipeMode(getRecipeMode());
@@ -44,54 +28,35 @@ export default function Header({ userId, userName }) {
   }, []);
 
   const handleChangeMode = () => {
-    sessionStorage.removeItem("recipeContext");
-    setRecipeMode("food");
-    window.dispatchEvent(new Event("recipe-mode-reset"));
+    const newMode = recipeMode === "food" ? "drink" : "food";
+    sessionStorage.setItem("recipeContext", JSON.stringify({ type: newMode }));
+    setRecipeMode(newMode);
+    window.dispatchEvent(new Event("recipe-mode-changed"));
   };
 
   return (
-    <header className="w-full max-w-3xl bg-white px-6 pt-4 pb-3 shadow-md rounded-b-lg mx-auto relative">
-      {/* CENTER — Logo */}
-      <div className="flex justify-center items-center gap-2">
-        <img src={chefBot} alt="robot chef" className="w-14 h-14" />
-        <span className="text-2xl font-medium text-gray-900">
+    <header
+      className="w-full bg-cream px-4 py-3 flex items-center justify-between border-b border-warm sticky top-0 z-40"
+      style={{ height: '52px' }}
+    >
+      {/* Left - Logo */}
+      <div className="flex items-center gap-2">
+        <span className="text-xl font-medium text-olive">
           Chef BonBon
         </span>
       </div>
 
-      {/* BOTTOM ROW */}
-      <div className="mt-3 flex items-end justify-between text-sm text-gray-600">
-        {/* Bottom-left — Greeting */}
-        <div>
-          {greeting},{" "}
-          <span className="font-semibold text-orange-600">
-            {name}
-          </span>
-          !
-        </div>
-
-        {/* Bottom-right — Mode + change */}
-        <div className="flex flex-col items-end gap-1 text-xs">
-          <span
-            className={`px-2 py-0.5 rounded-full border font-medium
-              ${
-                recipeMode === "drink"
-                  ? "border-slate-400 text-slate-600 bg-slate-50"
-                  : "border-orange-400 text-orange-700 bg-orange-50"
-              }
-            `}
-          >
-            {recipeMode === "drink" ? "Drink mode" : "Food mode"}
-          </span>
-
-          <button
-            onClick={handleChangeMode}
-            className="text-orange-600 hover:underline font-semibold"
-          >
-            Change mode
-          </button>
-        </div>
-      </div>
+      {/* Right - Mode Badge */}
+      <button
+        onClick={handleChangeMode}
+        className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: recipeMode === "drink" ? "#F5C842" : "#3B4A2F",
+          color: recipeMode === "drink" ? "#1A1A1A" : "#FFFFFF",
+        }}
+      >
+        {recipeMode === "drink" ? "Drink" : "Food"}
+      </button>
     </header>
   );
 }

@@ -1,13 +1,16 @@
-// src/components/SavedRecipes.jsx
+// client/src/components/recipes/SavedRecipes.jsx
+// Phase 5 - Saved Recipes Grid
+
 import React, { useState, useEffect } from 'react';
-import { supabase, auth } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
+import FoodIcon from '../ui/FoodIcon';
 
 export default function SavedRecipes({ userId, onGoHomeClick }) {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [deleteStatus, setDeleteStatus] = useState({});
-  const [shareStatus, setShareStatus] = useState({});
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
 
   useEffect(() => {
     if (!userId) {
@@ -17,11 +20,9 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
       return;
     }
 
-    setLoading(true);
-    setError('');
-
-    // Fetch initial recipes
     const fetchRecipes = async () => {
+      setLoading(true);
+      setError('');
       try {
         const { data, error } = await supabase
           .from('private_recipes')
@@ -31,203 +32,190 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
 
         if (error) throw error;
 
-        // Parse ingredients if stored as JSON string
-        const parsedRecipes = data.map(recipe => ({
-          ...recipe,
-          ingredients: typeof recipe.ingredients === 'string'
-            ? JSON.parse(recipe.ingredients)
-            : recipe.ingredients,
-          recipeName: recipe.title,
-          recipeContent: recipe.instructions,
-          createdAt: new Date(recipe.created_at),
-        }));
+        const parsedRecipes = data.map(recipe => {
+          let ingArray = [];
+          try {
+            ingArray = typeof recipe.ingredients === 'string'
+              ? JSON.parse(recipe.ingredients)
+              : recipe.ingredients || [];
+          } catch {
+            ingArray = [];
+          }
+          
+          return {
+            ...recipe,
+            ingredients: ingArray,
+            ingredientCount: Array.isArray(ingArray) ? ingArray.length : 0,
+            createdAt: new Date(recipe.created_at),
+          };
+        });
 
         setRecipes(parsedRecipes);
       } catch (err) {
         console.error("Error fetching recipes:", err);
-        setError("Failed to load recipes. Please try again.");
+        setError("Failed to load recipes.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchRecipes();
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('private_recipes_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'private_recipes',
-          filter: `user_id=eq.${userId}`
-        },
-        () => {
-          fetchRecipes();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [userId]);
 
   const handleDeleteRecipe = async (recipeId) => {
-    if (!userId) {
-      return;
-    }
-    setDeleteStatus(prev => ({ ...prev, [recipeId]: 'Deleting...' }));
+    if (!userId) return;
     try {
-      const { error } = await supabase
+      await supabase
         .from('private_recipes')
         .delete()
         .eq('id', recipeId)
         .eq('user_id', userId);
-
-      if (error) throw error;
-
-      setDeleteStatus(prev => ({ ...prev, [recipeId]: 'Deleted!' }));
-      setTimeout(() => setDeleteStatus(prev => ({ ...prev, [recipeId]: '' })), 3000);
+      
+      setRecipes(recipes.filter(r => r.id !== recipeId));
     } catch (err) {
-      console.error("Error deleting recipe:", err);
-      setDeleteStatus(prev => ({ ...prev, [recipeId]: 'Failed to delete.' }));
-      setTimeout(() => setDeleteStatus(prev => ({ ...prev, [recipeId]: '' })), 3000);
+      console.error("Error deleting:", err);
     }
   };
 
-  const handleShareRecipe = async (recipeId, currentIsPublic) => {
-    if (!userId) {
-      return;
-    }
-
-    setShareStatus(prev => ({ ...prev, [recipeId]: currentIsPublic ? 'Unsharing...' : 'Sharing...' }));
-
-    try {
-      const recipeToShare = recipes.find(r => r.id === recipeId);
-
-      if (currentIsPublic) {
-        // Update private recipe
-        await supabase
-          .from('private_recipes')
-          .update({ is_public: false })
-          .eq('id', recipeId)
-          .eq('user_id', userId);
-
-        // Remove from public recipes
-        await supabase
-          .from('public_recipes')
-          .delete()
-          .eq('original_recipe_id', recipeId)
-          .eq('user_id', userId);
-
-        setShareStatus(prev => ({ ...prev, [recipeId]: 'Unshared successfully!' }));
-      } else {
-        // Update private recipe
-        await supabase
-          .from('private_recipes')
-          .update({ is_public: true })
-          .eq('id', recipeId)
-          .eq('user_id', userId);
-
-        // Add to public recipes
-        if (recipeToShare) {
-          const { data: userData } = await supabase.auth.getUser();
-          const username = auth.currentUser?.displayName || userData?.user?.email || 'Anonymous';
-
-          await supabase
-            .from('public_recipes')
-            .insert({
-              user_id: userId,
-              username: username,
-              title: recipeToShare.title || recipeToShare.recipeName,
-              ingredients: typeof recipeToShare.ingredients === 'string'
-                ? recipeToShare.ingredients
-                : JSON.stringify(recipeToShare.ingredients),
-              instructions: recipeToShare.instructions || recipeToShare.recipeContent,
-              original_recipe_id: recipeId,
-              created_at: new Date().toISOString(),
-            });
-        }
-        setShareStatus(prev => ({ ...prev, [recipeId]: 'Shared successfully!' }));
-      }
-
-      setTimeout(() => setShareStatus(prev => ({ ...prev, [recipeId]: '' })), 3000);
-    } catch (err) {
-      console.error("Error sharing/unsharing recipe:", err);
-      setShareStatus(prev => ({ ...prev, [recipeId]: `Failed to ${currentIsPublic ? 'unshare' : 'share'}.` }));
-      setTimeout(() => setShareStatus(prev => ({ ...prev, [recipeId]: '' })), 3000);
-    }
-  };
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'food', label: 'Food' },
+    { id: 'drink', label: 'Drinks' },
+  ];
 
   if (loading) {
-    return <p className="text-center text-gray-600 mt-8">Loading your recipes...</p>;
-  }
-
-  if (error) {
-    return <p className="text-center text-red-600 mt-8">{error}</p>;
+    return (
+      <div className="p-4 w-full max-w-md mx-auto">
+        <p className="text-center text-gray-500 mt-8">Loading your recipes...</p>
+      </div>
+    );
   }
 
   return (
-    <section className="p-8 md:p-16 w-full max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-orange-600 mb-6">Your Saved Recipes</h2>
+    <main className="p-4 w-full max-w-md mx-auto pb-24">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-olive">Your saved recipes</h2>
+        {recipes.length > 0 && (
+          <span className="text-xs px-2 py-1 rounded-full bg-warm text-gray-600">
+            {recipes.length} saved
+          </span>
+        )}
+      </div>
+
+      <div className="saved-filters flex gap-2 mb-4">
+        {filters.map((filter) => (
+          <button
+            key={filter.id}
+            onClick={() => setActiveFilter(filter.id)}
+            className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: activeFilter === filter.id ? '#3B4A2F' : 'transparent',
+              color: activeFilter === filter.id ? '#FFFFFF' : '#888888',
+              border: activeFilter === filter.id ? 'none' : '1px solid #E8E5E0',
+            }}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       {recipes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center mt-8">
-          <p className="text-center text-gray-600 mb-4">You haven't saved any recipes yet.</p>
+        <div className="flex flex-col items-center justify-center py-12">
+          <FoodIcon name="recipe" size={64} showPlaceholder={false} />
+          <p className="text-center text-gray-500 mt-4 mb-2">No saved recipes yet</p>
           <button
             onClick={onGoHomeClick}
-            className="px-6 py-3 bg-orange-600 text-white rounded-md text-lg font-semibold hover:bg-orange-700 transition-colors shadow-md"
+            className="px-6 py-2.5 rounded-full text-white text-sm font-medium"
+            style={{ backgroundColor: '#3B4A2F' }}
           >
-            Start Adding Recipes!
+            Generate your first recipe
           </button>
         </div>
       ) : (
-        <div className="grid gap-6">
-          {recipes.map((recipe) => (
-            <div key={recipe.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                {recipe.recipeName || recipe.title || 'Untitled Recipe'} {recipe.is_public && <span className="text-sm font-normal text-green-600">(Public)</span>}
-              </h3>
-              <p className="text-gray-700 mb-2">
-                <span className="font-medium">Ingredients:</span> {Array.isArray(recipe.ingredients) ? recipe.ingredients.join(', ') : recipe.ingredients}
-              </p>
-              <div className="whitespace-pre-wrap break-words font-sans leading-relaxed text-gray-800 text-base mb-4">
-                {recipe.recipeContent || recipe.instructions}
-              </div>
-              <p className="text-gray-500 text-xs mb-4">
-                Saved on: {recipe.createdAt?.toLocaleString()}
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDeleteRecipe(recipe.id)}
-                  disabled={deleteStatus[recipe.id] === 'Deleting...'}
-                  className="px-4 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
+        <div className="saved-grid grid grid-cols-2 gap-2.5">
+          {recipes.map((recipe) => {
+            const firstIng = Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
+              ? (typeof recipe.ingredients[0] === 'object' ? recipe.ingredients[0].name : recipe.ingredients[0])
+              : 'recipe';
+
+            const isFood = !recipe.title?.toLowerCase().includes('drink') && 
+                         !recipe.title?.toLowerCase().includes('cocktail') &&
+                         !recipe.title?.toLowerCase().includes('smoothie');
+            
+            if (activeFilter === 'food' && !isFood) return null;
+            if (activeFilter === 'drink' && isFood) return null;
+
+            return (
+              <div
+                key={recipe.id}
+                className="saved-card bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer"
+                onClick={() => setSelectedRecipe(recipe)}
+              >
+                <div
+                  className="saved-card-thumb h-20 flex items-center justify-center"
+                  style={{ backgroundColor: '#F0EBE0' }}
                 >
-                  {deleteStatus[recipe.id] === 'Deleting...' ? 'Deleting...' : 'Delete'}
-                </button>
-                <button
-                  onClick={() => handleShareRecipe(recipe.id, recipe.is_public)}
-                  disabled={shareStatus[recipe.id] === 'Sharing...' || shareStatus[recipe.id] === 'Unsharing...'}
-                  className={`px-4 py-2 rounded-md text-sm transition-colors ${
-                    recipe.is_public ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-500 hover:bg-blue-600'
-                  } text-white disabled:opacity-50`}
-                >
-                  {shareStatus[recipe.id] === 'Sharing...' ? 'Sharing...' :
-                   shareStatus[recipe.id] === 'Unsharing...' ? 'Unsharing...' :
-                   recipe.is_public ? 'Unshare' : 'Share'}
-                </button>
-                {shareStatus[recipe.id] && shareStatus[recipe.id] !== 'Sharing...' && shareStatus[recipe.id] !== 'Unsharing...' && (
-                  <p className={`text-sm ${shareStatus[recipe.id].includes("Failed") ? 'text-red-600' : 'text-gray-700'}`}>
-                    {shareStatus[recipe.id]}
-                  </p>
-                )}
+                  <FoodIcon name={firstIng} size={52} />
+                </div>
+                <div className="p-2">
+                  <h3 className="text-sm font-medium text-gray-800 truncate mb-1">
+                    {recipe.title || 'Untitled'}
+                  </h3>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-warm text-gray-500">
+                      {recipe.cooking_method || 'stovetop'}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      {recipe.ingredientCount} ing
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-    </section>
+
+      {selectedRecipe && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setSelectedRecipe(null)}
+        >
+          <div 
+            className="bg-white rounded-xl max-w-md w-full max-h-[80vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-base font-medium text-olive">{selectedRecipe.title}</h3>
+              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">×</button>
+            </div>
+            <div className="p-4">
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                {selectedRecipe.instructions}
+              </pre>
+            </div>
+            <div className="p-4 border-t border-gray-100 flex gap-2">
+              <button
+                onClick={() => setSelectedRecipe(null)}
+                className="flex-1 py-2.5 rounded-full text-white text-sm font-medium"
+                style={{ backgroundColor: '#3B4A2F' }}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteRecipe(selectedRecipe.id);
+                  setSelectedRecipe(null);
+                }}
+                className="px-4 py-2.5 rounded-full border border-red-500 text-red-500 text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
   );
 }

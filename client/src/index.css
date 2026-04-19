@@ -4,6 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   DESIGN TOKENS - Chef BonBon Redesign
+   Use these CSS variables throughout the app
+   ============================================ */
+:root {
+  /* Background Colors */
+  --color-cream: #FAF7F2;
+  --color-warm-surface: #F0EBE0;
+  --color-card-bg: #FFFFFF;
+
+  /* Primary Colors - Olive */
+  --color-olive-primary: #3B4A2F;
+  --color-olive-hover: #2E3D24;
+
+  /* Accent Colors - Gold */
+  --color-gold: #F5C842;
+  --color-gold-hover: #E2B830;
+
+  /* Secondary - Rust/Orange */
+  --color-rust: #D85A30;
+
+  /* Text Colors */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #888888;
+  --color-text-muted: #BBBBBB;
+
+  /* Border Colors */
+  --color-border-light: #EEEEEE;
+  --color-border-warm: #E8E5E0;
+
+  /* Ingredient tag background */
+  --color-tag-bg: #F5F5F2;
+}
+
 /* Any minimal global styles that are not easily handled by Tailwind can go here. */
 html {
   font-size: 16px; /* Ensures consistent base font size across browsers/deployments */
@@ -16,8 +50,12 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-cream);
 }
 
+/* ============================================
+   Loading Animation
+   ============================================ */
 .wave-container {
   display: flex;
   gap: 4px;
@@ -27,8 +65,87 @@ body {
   width: 6px;
   height: 100%;
   animation: wave 1.2s ease-in-out infinite;
+  background-color: var(--color-olive-primary);
 }
 @keyframes wave {
   0%, 100% { transform: scaleY(0.5); }
   50% { transform: scaleY(1.5); }
+}
+
+/* ============================================
+   Animations - Phase 7 Polish
+   ============================================ */
+
+/* Ingredient tag entrance */
+@keyframes tagPop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  80%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.tag-enter {
+  animation: tagPop 0.18s ease-out forwards;
+}
+
+/* Bottom sheet slide up */
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-open {
+  animation: sheetUp 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* Card entrance */
+@keyframes fadeUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.card-enter {
+  animation: fadeUp 0.2s ease-out forwards;
+}
+
+/* ============================================
+   Mobile Safe Areas - Phase 7
+   ============================================ */
+
+@media (display-mode: standalone) {
+  .app-header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============================================
+   Recipe Builder Layout
+   ============================================ */
+
+.recipe-builder-shell {
+  max-width: 35rem;
+}
+
+.recipe-builder-card {
+  width: 100%;
+}
+
+.recipe-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.recipe-method-chip {
+  flex: 0 0 auto;
+  padding-inline: 1.05rem;
+  font-size: 0.92rem;
+}
+
+@media (min-width: 768px) {
+  .recipe-methods {
+    flex-wrap: nowrap;
+  }
 }
