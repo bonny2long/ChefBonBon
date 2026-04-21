@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 const CLAUDE_API_URL =
   process.env.CLAUDE_API_URL || "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-20241022";
+  process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
 
 const CLAUDE_TIMEOUT_MS = 30000;
 
