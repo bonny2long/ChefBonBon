@@ -2,6 +2,8 @@ import fetch from "node-fetch";
 
 const CLAUDE_API_URL =
   process.env.CLAUDE_API_URL || "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_MODEL =
+  process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-20241022";
 
 const CLAUDE_TIMEOUT_MS = 30000;
 
@@ -40,6 +42,7 @@ export const generateRecipeText = async (prompt, apiKey) => {
   const sanitizedPrompt = sanitizeInput(prompt);
 
   console.log(`Using Claude API URL: ${CLAUDE_API_URL}`);
+  console.log(`Using Anthropic model: ${ANTHROPIC_MODEL}`);
   console.log(`API Key length: ${apiKey.length}`);
 
   const response = await fetchWithTimeout(
@@ -52,7 +55,7 @@ export const generateRecipeText = async (prompt, apiKey) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
+        model: ANTHROPIC_MODEL,
         max_tokens: 1100,
         temperature: 0.7,
         messages: [{ role: "user", content: sanitizedPrompt }],
@@ -65,6 +68,11 @@ export const generateRecipeText = async (prompt, apiKey) => {
 
   if (!response.ok) {
     console.error("Claude API error response:", JSON.stringify(data, null, 2));
+    if (data?.error?.type === "not_found_error") {
+      throw new Error(
+        `Anthropic model not found: ${ANTHROPIC_MODEL}. Set ANTHROPIC_MODEL to a model available in your workspace.`,
+      );
+    }
     throw new Error(
       data.error?.message ||
         `Claude API error: ${response.status} ${response.statusText}`,

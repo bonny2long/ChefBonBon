@@ -27,7 +27,7 @@ cd ../server && npm run start # Backend: http://localhost:3000
 
 ## Features
 
-- AI-powered recipe generation using Claude 3 Haiku
+- AI-powered recipe generation using Anthropic Claude
 - User authentication with Supabase
 - Save and share recipes
 - Like and comment on community recipes
@@ -44,5 +44,5 @@ cd ../server && npm run start # Backend: http://localhost:3000
 - React 19 + Vite
 - Node.js + Express
 - Supabase (PostgreSQL)
-- Anthropic Claude 3 Haiku
+- Anthropic Claude API (`ANTHROPIC_MODEL` defaults to `claude-3-5-haiku-20241022`)
 - Tailwind CSS

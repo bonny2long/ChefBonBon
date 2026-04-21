@@ -33,6 +33,7 @@ In your Railway project dashboard:
 ```
 ANTHROPIC_API_KEY=sk-ant-your-actual-api-key-here
 CLAUDE_API_URL=https://api.anthropic.com/v1/messages
+ANTHROPIC_MODEL=claude-3-5-haiku-20241022
 NODE_ENV=production
 ```
 
@@ -97,6 +98,7 @@ Ensure your `package.json` has the correct start script:
 |----------|-------------|----------|
 | ANTHROPIC_API_KEY | Your Anthropic API key for Claude AI | Yes |
 | CLAUDE_API_URL | Claude API endpoint (default: https://api.anthropic.com/v1/messages) | Optional |
+| ANTHROPIC_MODEL | Anthropic model name (default: `claude-3-5-haiku-20241022`) | Optional |
 | PORT | Port number (Railway sets this automatically) | No |
 | NODE_ENV | Environment mode (set to "production") | Recommended |
 
