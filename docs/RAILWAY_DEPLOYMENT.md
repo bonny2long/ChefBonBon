@@ -33,7 +33,7 @@ In your Railway project dashboard:
 ```
 ANTHROPIC_API_KEY=sk-ant-your-actual-api-key-here
 CLAUDE_API_URL=https://api.anthropic.com/v1/messages
-ANTHROPIC_MODEL=claude-3-5-haiku-20241022
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
 NODE_ENV=production
 ```
 
@@ -94,13 +94,13 @@ Ensure your `package.json` has the correct start script:
 
 ## Environment Variables Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| ANTHROPIC_API_KEY | Your Anthropic API key for Claude AI | Yes |
-| CLAUDE_API_URL | Claude API endpoint (default: https://api.anthropic.com/v1/messages) | Optional |
-| ANTHROPIC_MODEL | Anthropic model name (default: `claude-3-5-haiku-20241022`) | Optional |
-| PORT | Port number (Railway sets this automatically) | No |
-| NODE_ENV | Environment mode (set to "production") | Recommended |
+| Variable          | Description                                                          | Required    |
+| ----------------- | -------------------------------------------------------------------- | ----------- |
+| ANTHROPIC_API_KEY | Your Anthropic API key for Claude AI                                 | Yes         |
+| CLAUDE_API_URL    | Claude API endpoint (default: https://api.anthropic.com/v1/messages) | Optional    |
+| ANTHROPIC_MODEL   | Anthropic model name (default: `claude-3-5-haiku-20241022`)          | Optional    |
+| PORT              | Port number (Railway sets this automatically)                        | No          |
+| NODE_ENV          | Environment mode (set to "production")                               | Recommended |
 
 ## Testing Your Deployment
 
@@ -140,6 +140,7 @@ curl -X POST https://your-app-name.up.railway.app/claude-proxy \
 ## Cost Considerations
 
 Railway offers:
+
 - **Free Tier**: $5 of usage per month (sufficient for development/testing)
 - **Pro Plan**: $20/month for production apps
 - **Usage-Based**: Pay only for what you use
