@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 const CLAUDE_API_URL =
   process.env.CLAUDE_API_URL || "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
+  process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001";
 
 const CLAUDE_TIMEOUT_MS = 30000;
 
@@ -36,8 +36,16 @@ const fetchWithTimeout = async (url, options, timeoutMs) => {
 };
 
 export const generateRecipeText = async (prompt, apiKey) => {
-  if (!prompt) throw new Error("Prompt is required.");
-  if (!apiKey) throw new Error("Anthropic API Key is missing.");
+  if (!prompt) {
+    const error = new Error("Prompt is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!apiKey) {
+    const error = new Error("Anthropic API Key is missing.");
+    error.statusCode = 500;
+    throw error;
+  }
 
   const sanitizedPrompt = sanitizeInput(prompt);
 
@@ -64,19 +72,35 @@ export const generateRecipeText = async (prompt, apiKey) => {
     CLAUDE_TIMEOUT_MS,
   );
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     console.error("Claude API error response:", JSON.stringify(data, null, 2));
+    const errorType = data?.error?.type;
+    const upstreamMessage =
+      data?.error?.message ||
+      `Claude API error: ${response.status} ${response.statusText}`;
+
     if (data?.error?.type === "not_found_error") {
-      throw new Error(
+      const error = new Error(
         `Anthropic model not found: ${ANTHROPIC_MODEL}. Set ANTHROPIC_MODEL to a model available in your workspace.`,
       );
+      error.statusCode = 502;
+      error.upstreamStatus = response.status;
+      throw error;
     }
-    throw new Error(
-      data.error?.message ||
-        `Claude API error: ${response.status} ${response.statusText}`,
-    );
+
+    const error = new Error(upstreamMessage);
+    error.statusCode =
+      response.status === 401 || response.status === 403 ? 500 : 502;
+    error.upstreamStatus = response.status;
+    error.upstreamType = errorType;
+    throw error;
   }
 
   const text = data?.content?.[0]?.text;

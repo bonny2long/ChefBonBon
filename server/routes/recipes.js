@@ -126,7 +126,7 @@ Why this works:
     return res.json({ recipeType: "food", recipe: recipeText });
   } catch (error) {
     console.error("Recipe route error:", error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       error: error.message,
       stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
