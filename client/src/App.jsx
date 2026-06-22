@@ -1,4 +1,4 @@
-// src/App.jsx
+﻿// src/App.jsx
 import React, { useState, useEffect, Suspense, lazy } from "react";
 import Header from "./components/layout/Header";
 import BottomNav from "./components/layout/BottomNav";
@@ -10,6 +10,7 @@ import { setupAuthListener, signOut } from "./lib/supabase";
 const Main = lazy(() => import("./components/recipes/Main"));
 const SavedRecipes = lazy(() => import("./components/recipes/SavedRecipes"));
 const ScanScreen = lazy(() => import("./components/recipes/ScanScreen"));
+const AccountScreen = lazy(() => import("./components/recipes/AccountScreen"));
 
 export default function App() {
   const [userId, setUserId] = useState(null);
@@ -106,11 +107,7 @@ export default function App() {
     } else if (tabId === 'scan') {
       setCurrentViewMode("scan");
     } else if (tabId === 'account') {
-      if (userId) {
-        handleLogout();
-      } else {
-        openLoginModal();
-      }
+      setCurrentViewMode('account');
     }
   };
 
@@ -118,6 +115,7 @@ export default function App() {
     if (currentViewMode === 'main') return 'home';
     if (currentViewMode === 'savedRecipes') return 'saved';
     if (currentViewMode === 'scan') return 'scan';
+    if (currentViewMode === 'account') return 'account';
     return 'home';
   };
 
@@ -155,7 +153,14 @@ export default function App() {
               Please log in to view your saved recipes.
             </p>
           )}
-          {currentViewMode === "scan" && (
+          {currentViewMode === "account" && (
+            <AccountScreen
+              userId={userId}
+              userName={userName}
+              onLogin={openLoginModal}
+              onLogout={handleLogout}
+            />
+          )}          {currentViewMode === "scan" && (
             <ScanScreen
               userId={userId}
               onGoHome={handleGoHomeClick}

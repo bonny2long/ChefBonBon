@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
@@ -8,6 +8,20 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const configuredOrigins = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
+const netlifyOriginRegex = /^https:\/\/(?:[a-zA-Z0-9-]+\.)?chefbonbon\.netlify\.app$/;
+
+const isAllowedOrigin = (origin) => (
+  !origin ||
+  origin.startsWith("http://localhost:") ||
+  netlifyOriginRegex.test(origin) ||
+  configuredOrigins.has(origin)
+);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -17,30 +31,18 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.use(limiter);
-
-const allowedOriginRegex =
-  /^https:\/\/(?:[a-zA-Z0-9-]+\.)?chefbonbon\.netlify\.app$/;
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (origin && origin.startsWith("http://localhost:")) {
-        return callback(null, true);
-      }
-      if (allowedOriginRegex.test(origin)) {
-        callback(null, true);
-      } else {
-        const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}.`;
-        callback(new Error(msg), false);
-      }
-    },
-  })
-);
-
-app.use(express.json());
-
+app.use(cors({
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error(`Origin is not allowed by CORS: ${origin}`), false);
+  },
+}));
+app.use(express.json({ limit: "50kb" }));
 app.use("/api", recipesRouter);
 
 app.use((req, res) => {

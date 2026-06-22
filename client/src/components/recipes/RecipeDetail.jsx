@@ -136,9 +136,7 @@ export default function RecipeDetail({
               <button
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 className="w-8 h-8 rounded-full bg-warm text-olive font-medium"
-              >
-                Ã¢Ë†â€™
-              </button>
+              >`n                -`n              </button>
               <span className="text-sm font-medium">{servings}</span>
               <button
                 onClick={() => setServings(servings + 1)}

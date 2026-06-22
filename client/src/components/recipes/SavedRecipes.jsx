@@ -15,6 +15,8 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCookingMethod, setActiveCookingMethod] = useState('all');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
 
   useEffect(() => {
@@ -85,6 +87,8 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
     { id: 'drink', label: 'Drinks' },
   ];
 
+  const cookingMethods = ['all', ...new Set(recipes.map((recipe) => recipe.cookingMethod).filter(Boolean))];
+
   if (loading) {
     return (
       <div className="p-4 w-full max-w-md mx-auto">
@@ -105,7 +109,16 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
       </div>
 
       {error && <p className="text-sm text-rust mb-3">{error}</p>}
-      <div className="saved-filters flex gap-2 mb-4">
+      <label className="block mb-3">
+        <span className="sr-only">Search saved recipes</span>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search recipes or ingredients"
+          className="w-full p-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-olive"
+        />
+      </label>      <div className="saved-filters flex gap-2 mb-3">
         {filters.map((filter) => (
           <button
             key={filter.id}
@@ -122,7 +135,24 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
         ))}
       </div>
 
-      {recipes.length === 0 ? (
+      {cookingMethods.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
+          {cookingMethods.map((method) => (
+            <button
+              key={method}
+              onClick={() => setActiveCookingMethod(method)}
+              className="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors"
+              style={{
+                backgroundColor: activeCookingMethod === method ? '#F5C842' : 'transparent',
+                color: activeCookingMethod === method ? '#1A1A1A' : '#888888',
+                border: activeCookingMethod === method ? 'none' : '1px solid #E8E5E0',
+              }}
+            >
+              {method === 'all' ? 'All methods' : method}
+            </button>
+          ))}
+        </div>
+      )}      {recipes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12">
           <FoodIcon name="recipe" size={64} showPlaceholder={false} />
           <p className="text-center text-gray-500 mt-4 mb-2">No saved recipes yet</p>
@@ -138,7 +168,10 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
         <div className="saved-grid grid grid-cols-2 gap-2.5">
           {recipes.map((recipe) => {
             const firstIng = recipe.primaryIngredient || 'recipe';
+            const searchableText = [recipe.title, ...recipe.ingredients.map((ingredient) => typeof ingredient === 'object' ? ingredient.name : ingredient)].filter(Boolean).join(' ').toLowerCase();
             if (activeFilter !== 'all' && recipe.recipeType !== activeFilter) return null;
+            if (activeCookingMethod !== 'all' && recipe.cookingMethod !== activeCookingMethod) return null;
+            if (searchQuery.trim() && !searchableText.includes(searchQuery.trim().toLowerCase())) return null;
 
             return (
               <div
@@ -183,7 +216,7 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
           >
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-base font-medium text-olive">{selectedRecipe.title}</h3>
-              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">Ãƒâ€”</button>
+              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">x</button>
             </div>
             <div className="p-4">{selectedRecipe.structured ? <RecipeDetail recipeData={selectedRecipe.structured} onClose={() => setSelectedRecipe(null)} readOnly /> : <pre className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRecipe.instructions}</pre>}</div>
             <div className="p-4 border-t border-gray-100 flex gap-2">
