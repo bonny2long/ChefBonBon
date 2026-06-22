@@ -4,6 +4,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import FoodIcon from '../ui/FoodIcon';
+import RecipeDetail from './RecipeDetail';
+
+const parseIngredients = (value) => { try { return typeof value === 'string' ? JSON.parse(value) : value || []; } catch { return []; } };
+const getStructuredRecipe = (recipe) => recipe.recipe_json && typeof recipe.recipe_json === 'object' ? recipe.recipe_json : null;
+const getRecipeType = (recipe) => recipe.recipe_type || (/(drink|cocktail|smoothie)/i.test(recipe.title || '') ? 'drink' : 'food');
 
 export default function SavedRecipes({ userId, onGoHomeClick }) {
   const [recipes, setRecipes] = useState([]);
@@ -32,20 +37,17 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
 
         if (error) throw error;
 
-        const parsedRecipes = data.map(recipe => {
-          let ingArray = [];
-          try {
-            ingArray = typeof recipe.ingredients === 'string'
-              ? JSON.parse(recipe.ingredients)
-              : recipe.ingredients || [];
-          } catch {
-            ingArray = [];
-          }
-          
+        const parsedRecipes = data.map((recipe) => {
+          const structured = getStructuredRecipe(recipe);
+          const ingredients = structured?.ingredients || parseIngredients(recipe.ingredients);
           return {
             ...recipe,
-            ingredients: ingArray,
-            ingredientCount: Array.isArray(ingArray) ? ingArray.length : 0,
+            structured,
+            ingredients,
+            recipeType: getRecipeType(recipe),
+            cookingMethod: structured?.cookingMethod || recipe.cooking_method || 'stovetop',
+            primaryIngredient: structured?.primaryIngredient || (Array.isArray(ingredients) ? (typeof ingredients[0] === 'object' ? ingredients[0]?.name : ingredients[0]) : 'recipe'),
+            ingredientCount: Array.isArray(ingredients) ? ingredients.length : 0,
             createdAt: new Date(recipe.created_at),
           };
         });
@@ -135,16 +137,8 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
       ) : (
         <div className="saved-grid grid grid-cols-2 gap-2.5">
           {recipes.map((recipe) => {
-            const firstIng = Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
-              ? (typeof recipe.ingredients[0] === 'object' ? recipe.ingredients[0].name : recipe.ingredients[0])
-              : 'recipe';
-
-            const isFood = !recipe.title?.toLowerCase().includes('drink') && 
-                         !recipe.title?.toLowerCase().includes('cocktail') &&
-                         !recipe.title?.toLowerCase().includes('smoothie');
-            
-            if (activeFilter === 'food' && !isFood) return null;
-            if (activeFilter === 'drink' && isFood) return null;
+            const firstIng = recipe.primaryIngredient || 'recipe';
+            if (activeFilter !== 'all' && recipe.recipeType !== activeFilter) return null;
 
             return (
               <div
@@ -164,7 +158,7 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
                   </h3>
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-warm text-gray-500">
-                      {recipe.cooking_method || 'stovetop'}
+                      {recipe.cookingMethod}
                     </span>
                     <span className="text-[10px] text-gray-400">
                       {recipe.ingredientCount} ing
@@ -189,13 +183,9 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
           >
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-base font-medium text-olive">{selectedRecipe.title}</h3>
-              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">Ã—</button>
+              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">Ãƒâ€”</button>
             </div>
-            <div className="p-4">
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                {selectedRecipe.instructions}
-              </pre>
-            </div>
+            <div className="p-4">{selectedRecipe.structured ? <RecipeDetail recipeData={selectedRecipe.structured} onClose={() => setSelectedRecipe(null)} readOnly /> : <pre className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRecipe.instructions}</pre>}</div>
             <div className="p-4 border-t border-gray-100 flex gap-2">
               <button
                 onClick={() => setSelectedRecipe(null)}

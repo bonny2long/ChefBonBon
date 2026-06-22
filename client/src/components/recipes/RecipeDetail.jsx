@@ -10,6 +10,7 @@ export default function RecipeDetail({
   onSave,
   onRegenerate,
   rawRecipe,
+  readOnly = false,
 }) {
   const [activeTab, setActiveTab] = useState('detail');
   const [servings, setServings] = useState(recipeData?.servings || 2);
@@ -42,10 +43,10 @@ export default function RecipeDetail({
         <button onClick={onClose} className="text-gray-500 mb-4">Back</button>
         <h2 className="text-base font-medium text-center text-olive mb-4">Generated Recipe</h2>
         <pre className="text-sm text-gray-700 whitespace-pre-wrap">{rawRecipe}</pre>
-        <div className="recipe-actions mt-4 pt-4 border-t border-gray-100 space-y-2">
+        {!readOnly && <div className="recipe-actions mt-4 pt-4 border-t border-gray-100 space-y-2">
           <button onClick={onRegenerate} className="w-full py-2.5 rounded-full bg-olive text-white text-sm font-medium">Regenerate</button>
           <button onClick={() => onSave?.(null, rawRecipe)} className="w-full py-2.5 rounded-full border border-olive text-olive text-sm font-medium">Save Recipe</button>
-        </div>
+        </div>}
       </div>
     );
   }
@@ -136,7 +137,7 @@ export default function RecipeDetail({
                 onClick={() => setServings(Math.max(1, servings - 1))}
                 className="w-8 h-8 rounded-full bg-warm text-olive font-medium"
               >
-                âˆ’
+                Ã¢Ë†â€™
               </button>
               <span className="text-sm font-medium">{servings}</span>
               <button
@@ -180,7 +181,7 @@ export default function RecipeDetail({
           </div>
         )}
 
-        <div className="recipe-actions mt-4 pt-4 border-t border-gray-100 space-y-2">
+        {!readOnly && <div className="recipe-actions mt-4 pt-4 border-t border-gray-100 space-y-2">
           <button
             onClick={onRegenerate}
             className="w-full py-2.5 rounded-full bg-olive text-white text-sm font-medium"
@@ -193,7 +194,7 @@ export default function RecipeDetail({
           >
             Save Recipe
           </button>
-        </div>
+        </div>}
       </div>
     </div>
   );
