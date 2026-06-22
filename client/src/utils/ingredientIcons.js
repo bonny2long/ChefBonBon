@@ -6,23 +6,6 @@ const BASE = '/src/assets/food';
 
 export const INGREDIENT_ICONS = {
   // ============================================
-  // COMMON RECIPE NAMES (catch recipes like "Steak and Potato Medley")
-  // ============================================
-  'steak':               `${BASE}/Proteins/beef-steak-raw.png`,
-  'chicken':            `${BASE}/Proteins/chicken-breast-raw.png`,
-  'salmon':             `${BASE}/Proteins/salmon-fillet-raw.png`,
-  'pork':               `${BASE}/Proteins/pork-chop-raw.png`,
-  'lamb':               `${BASE}/Proteins/lamb-chop-raw.png`,
-  'beef':               `${BASE}/Proteins/beef-steak-raw.png`,
-  'tofu':               `${BASE}/Proteins/tofu.png`,
-  'egg':                `${BASE}/Proteins/egg.png`,
-  'rice':               `${BASE}/Grains_Carbs/rice.png`,
-  'pasta':              `${BASE}/Grains_Carbs/pasta.png`,
-  'potato':             `${BASE}/Vegetables/potato.png`,
-  'vegetable':           `${BASE}/Vegetables/broccoli.png`,
-  'vegetables':          `${BASE}/Vegetables/broccoli.png`,
-
-  // ============================================
   // PROTEINS
   // ============================================
 
@@ -229,7 +212,6 @@ export const INGREDIENT_ICONS = {
   'cinnamon':         `${BASE}/Herbs_and_Spices/cinnamon.png`,
   'chili powder':     `${BASE}/Herbs_and_Spices/chili-powder.png`,
   'black pepper':     `${BASE}/Herbs_and_Spices/black-pepper.png`,
-  'pepper':           `${BASE}/Herbs_and_Spices/black-pepper.png`,
   'coriander':        `${BASE}/Herbs_and_Spices/coriander.png`,
   'cardamom':         `${BASE}/Herbs_and_Spices/cardamom.png`,
   'oregano':          `${BASE}/Herbs_and_Spices/oregano.png`,

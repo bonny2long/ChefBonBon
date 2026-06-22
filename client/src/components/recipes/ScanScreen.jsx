@@ -3,7 +3,7 @@
 
 import React from 'react';
 
-export default function ScanScreen({ userId, onGoHome, showMessageModal }) {
+export default function ScanScreen({ onGoHome }) {
   return (
     <main className="p-4 w-full max-w-sm mx-auto">
       <div className="flex flex-col items-center justify-center py-16">

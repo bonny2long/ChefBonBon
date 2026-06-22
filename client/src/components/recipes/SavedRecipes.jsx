@@ -102,6 +102,7 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
         )}
       </div>
 
+      {error && <p className="text-sm text-rust mb-3">{error}</p>}
       <div className="saved-filters flex gap-2 mb-4">
         {filters.map((filter) => (
           <button
@@ -188,7 +189,7 @@ export default function SavedRecipes({ userId, onGoHomeClick }) {
           >
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-base font-medium text-olive">{selectedRecipe.title}</h3>
-              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">×</button>
+              <button onClick={() => setSelectedRecipe(null)} className="text-gray-400 text-xl">Ã—</button>
             </div>
             <div className="p-4">
               <pre className="text-sm text-gray-700 whitespace-pre-wrap">

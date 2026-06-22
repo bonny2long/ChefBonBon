@@ -1,134 +1,79 @@
 import express from "express";
 import { generateRecipeText } from "../services/claudeService.js";
+import { parseAndValidateRecipe, RecipeContractError } from "../services/recipeContract.js";
 
 const router = express.Router();
+const MIN_INGREDIENTS = 4;
 
-const sanitizeString = (str) => {
-  if (typeof str !== "string") return "";
-  return str.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 200);
-};
+const sanitizeString = (value) => (
+  typeof value === "string" ? value.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 200) : ""
+);
+const sanitizeIngredient = (value) => sanitizeString(value).slice(0, 100);
 
-const sanitizeIngredient = (ing) => {
-  if (typeof ing !== "string") return "";
-  return ing.replace(/[\x00-\x1F\x7F]/g, "").slice(0, 100);
-};
+function createRecipePrompt({ ingredients, recipeType, cookingMethod }) {
+  const typeInstructions = recipeType === "drink"
+    ? `You are Chef BonBon, a professional bartender. Use all listed ingredients. You may use ice, water, and simple syrup only when needed. Do not invent additional liquors. The cookingMethod must be "drink".`
+    : `You are Chef BonBon, a precise recipe generator. Use all listed ingredients where practical. The cookingMethod must be "${cookingMethod}".`;
 
-router.post("/recipes", async (req, res) => {
-  try {
-    const rawIngredients = req.body.ingredients;
-    const rawCookingMethod = req.body.cookingMethod;
-    const rawType = req.body.type;
+  return `
+${typeInstructions}
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    const normalizedType =
-      (
-        typeof rawType === "string" &&
-        ["food", "drink"].includes(rawType.toLowerCase())
-      ) ?
-        rawType.toLowerCase()
-      : null;
-    const normalizedMethod = sanitizeString(rawCookingMethod);
+IMPORTANT: Respond with ONLY valid JSON. Do not use Markdown or add explanatory text.
 
-    if (!Array.isArray(rawIngredients) || rawIngredients.length < 4) {
-      return res.status(400).json({
-        error: "Please provide at least 4 ingredients.",
-      });
-    }
+Ingredients: ${ingredients.join(", ")}
 
-    const ingredients = rawIngredients
-      .map(sanitizeIngredient)
-      .filter((ing) => ing.trim().length > 0)
-      .slice(0, 20);
-
-    if (ingredients.length < 4) {
-      return res.status(400).json({
-        error: "Please provide at least 4 valid ingredients.",
-      });
-    }
-
-    if (!normalizedType || !["food", "drink"].includes(normalizedType)) {
-      return res.status(400).json({
-        error: "Recipe type must be food or drink",
-      });
-    }
-
-    if (normalizedType === "drink") {
-      const prompt = `
-You are Chef BonBon, a professional bartender.
-
-Ingredients:
-${ingredients.join(", ")}
-
-Allowed staples:
-- ice
-- water
-- simple syrup (only if needed)
-
-Rules:
-- Use all listed ingredients
-- Do NOT invent additional liquors
-
-Format:
-
-Drink Name:
-Ingredients:
-- item with amount
-
-Steps:
-1. step
-
-Glass:
-Why this works:
-- brief explanation
-`;
-      const recipeText = await generateRecipeText(prompt, apiKey);
-      return res.json({ recipeType: "drink", recipe: recipeText });
-    }
-
-    if (!normalizedMethod) {
-      return res.status(400).json({
-        error: "Cooking method required for food recipes",
-      });
-    }
-
-    const prompt = `
-You are Chef BonBon, a precise recipe JSON generator.
-
-IMPORTANT: You MUST respond with ONLY valid JSON. No text before or after. No markdown formatting.
-
-For the recipe using: ${ingredients.join(", ")}
-
-Cooking method: ${normalizedMethod}
-
-Output this exact JSON structure:
+Return exactly this JSON shape:
 {
   "name": "Recipe Name",
   "description": "Brief 1-2 sentence description",
-  "cookingMethod": "${normalizedMethod}",
+  "cookingMethod": "${recipeType === "drink" ? "drink" : cookingMethod}",
   "prepTime": 10,
-  "cookTime": 35,
+  "cookTime": 15,
   "servings": 2,
   "difficulty": "easy",
   "dietary": [],
-  "ingredients": [
-    { "name": "ingredient name", "quantity": 1, "unit": "unit" }
-  ],
-  "steps": [
-    "Step instruction"
-  ],
+  "ingredients": [{ "name": "ingredient name", "quantity": 1, "unit": "unit" }],
+  "steps": ["Step instruction"],
   "primaryIngredient": "main ingredient"
 }
-
-Respond with ONLY the JSON. No explanation.
 `;
-    const recipeText = await generateRecipeText(prompt, apiKey);
-    return res.json({ recipeType: "food", recipe: recipeText });
+}
+
+router.post("/recipes", async (req, res) => {
+  try {
+    const { ingredients: rawIngredients, cookingMethod: rawCookingMethod, type: rawType } = req.body;
+    const recipeType = typeof rawType === "string" && ["food", "drink"].includes(rawType.toLowerCase())
+      ? rawType.toLowerCase()
+      : null;
+    const cookingMethod = sanitizeString(rawCookingMethod);
+
+    if (!Array.isArray(rawIngredients) || rawIngredients.length < MIN_INGREDIENTS) {
+      return res.status(400).json({ error: `Please provide at least ${MIN_INGREDIENTS} ingredients.` });
+    }
+
+    const ingredients = rawIngredients.map(sanitizeIngredient).filter(Boolean).slice(0, 20);
+    if (ingredients.length < MIN_INGREDIENTS) {
+      return res.status(400).json({ error: `Please provide at least ${MIN_INGREDIENTS} valid ingredients.` });
+    }
+    if (!recipeType) return res.status(400).json({ error: "Recipe type must be food or drink." });
+    if (recipeType === "food" && !cookingMethod) {
+      return res.status(400).json({ error: "Cooking method is required for food recipes." });
+    }
+
+    const raw = await generateRecipeText(
+      createRecipePrompt({ ingredients, recipeType, cookingMethod }),
+      process.env.ANTHROPIC_API_KEY,
+    );
+    const recipe = parseAndValidateRecipe(raw);
+
+    return res.json({ recipeType, recipe, raw });
   } catch (error) {
+    if (error instanceof RecipeContractError) {
+      console.warn("Invalid AI recipe response:", error.message);
+      return res.status(502).json({ error: "The AI returned an invalid recipe. Please try again." });
+    }
     console.error("Recipe route error:", error);
-    res.status(500).json({
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    return res.status(500).json({ error: "Unable to generate a recipe right now. Please try again." });
   }
 });
 

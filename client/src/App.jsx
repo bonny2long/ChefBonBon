@@ -9,8 +9,6 @@ import { setupAuthListener, signOut } from "./lib/supabase";
 
 const Main = lazy(() => import("./components/recipes/Main"));
 const SavedRecipes = lazy(() => import("./components/recipes/SavedRecipes"));
-const PublicFeed = lazy(() => import("./components/recipes/PublicFeed"));
-const LikedRecipes = lazy(() => import("./components/recipes/LikedRecipes"));
 const ScanScreen = lazy(() => import("./components/recipes/ScanScreen"));
 
 export default function App() {
@@ -96,15 +94,9 @@ export default function App() {
     setAuthMode("login");
     setShowAuthModal(true);
   };
-  const openSignupModal = () => {
-    setAuthMode("signup");
-    setShowAuthModal(true);
-  };
 
   const handleGoHomeClick = () => setCurrentViewMode("main");
   const handleViewRecipesClick = () => setCurrentViewMode("savedRecipes");
-  const handleViewPublicFeedClick = () => setCurrentViewMode("publicFeed");
-  const handleViewLikedRecipesClick = () => setCurrentViewMode("likedRecipes");
 
   const handleTabChange = (tabId) => {
     if (tabId === 'home') {
@@ -152,6 +144,7 @@ export default function App() {
               userId={userId}
               showMessageModal={showMessageModal}
               onViewSaved={handleViewRecipesClick}
+              onGoScan={() => setCurrentViewMode("scan")}
             />
           )}
           {currentViewMode === "savedRecipes" && userId && (
@@ -160,22 +153,6 @@ export default function App() {
           {currentViewMode === "savedRecipes" && !userId && (
             <p className="text-center text-gray-600 mt-8">
               Please log in to view your saved recipes.
-            </p>
-          )}
-          {currentViewMode === "publicFeed" && (
-            <PublicFeed userId={userId} showMessageModal={showMessageModal} />
-          )}
-          {currentViewMode === "likedRecipes" && userId && (
-            <LikedRecipes
-              userId={userId}
-              onGoHomeClick={handleGoHomeClick}
-              onViewPublicFeedClick={handleViewPublicFeedClick}
-              showMessageModal={showMessageModal}
-            />
-          )}
-          {currentViewMode === "likedRecipes" && !userId && (
-            <p className="text-center text-gray-600 mt-8">
-              Please log in to view your liked recipes.
             </p>
           )}
           {currentViewMode === "scan" && (

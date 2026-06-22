@@ -7,7 +7,6 @@ import { getIngredientIcon } from '../../utils/ingredientIcons';
 export default function FoodIcon({
   name = '',
   size = 32,
-  bg = '#F0EBE0',
   className = '',
   showPlaceholder = true,
 }) {

@@ -13,7 +13,7 @@ const getRecipeMode = () => {
   }
 };
 
-export default function Header({ userId, userName }) {
+export default function Header() {
   const [recipeMode, setRecipeMode] = useState(getRecipeMode);
 
   useEffect(() => {

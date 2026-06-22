@@ -40,7 +40,6 @@ export const generateRecipeText = async (prompt, apiKey) => {
   const sanitizedPrompt = sanitizeInput(prompt);
 
   console.log(`Using Claude API URL: ${CLAUDE_API_URL}`);
-  console.log(`API Key length: ${apiKey.length}`);
 
   const response = await fetchWithTimeout(
     CLAUDE_API_URL,
